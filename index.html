@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OIDC CIBA Server-to-Server IDPerú - Modo PING</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(203, 213, 225, 0.8);
+      box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.1), 0 0 20px rgba(14, 165, 233, 0.08);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.08);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.6);
+      border-radius: 9999px;
+    }
+    #inspector-panel {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased overflow-hidden">
+
+  <!-- 3D Canvas Mount Point -->
+  <div id="canvas-container"></div>
+
+  <div class="relative z-10 flex flex-col justify-between w-full h-screen pointer-events-none p-3 sm:p-4 overflow-hidden">
+    
+    <!-- Top Bar: Header con Identidades Oficiales RENIEC e ID Perú -->
+    <header class="glass-panel rounded-2xl px-4 py-2 flex flex-wrap items-center justify-between gap-3 pointer-events-auto shadow-lg">
+      <div class="flex items-center space-x-3.5">
+        
+        <!-- Logotipo RENIEC Oficial -->
+        <div class="flex items-center space-x-2 pr-3 border-r border-slate-300">
+          <svg class="h-8 w-auto flex-shrink-0" viewBox="0 0 260 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="32" width="260" height="34" fill="#a0a0a0" rx="2"/>
+            <rect x="0" y="66" width="260" height="14" fill="#1e3a68" rx="1"/>
+            <text x="6" y="76" fill="#ffffff" font-family="'Inter', sans-serif" font-size="7.4" font-weight="800" letter-spacing="0.3">REGISTRO NACIONAL DE IDENTIFICACIÓN Y ESTADO CIVIL</text>
+            <text x="5" y="60" fill="#ffffff" font-family="'Inter', sans-serif" font-size="34" font-weight="900" font-style="italic" letter-spacing="-1">RENIEC</text>
+            <g transform="translate(182, 3)">
+              <circle cx="15" cy="12" r="10" fill="#6a1b41"/>
+              <path d="M5 24 H25 C28 24 30 26 30 29 V64 H0 V29 C0 26 2 24 5 24 Z" fill="#6a1b41"/>
+              <circle cx="48" cy="12" r="10" fill="#6a1b41"/>
+              <path d="M38 24 H58 C61 24 63 26 63 29 V64 H33 V29 C33 26 35 24 38 24 Z" fill="#6a1b41"/>
+              <ellipse cx="38" cy="48" rx="25" ry="21" fill="#ffffff" stroke="#6a1b41" stroke-width="1.2"/>
+              <path d="M38 33 C31 33 25 40 25 48 C25 56 30 63 38 63 C46 63 51 56 51 48" stroke="#6a1b41" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+              <path d="M38 38 C33 38 29 42 29 48 C29 53 33 58 38 58 C43 58 47 53 47 48" stroke="#6a1b41" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+              <path d="M38 43 C35.5 43 33.5 45 33.5 48 C33.5 51 35.5 53 38 53 C40.5 53 42.5 51 42.5 48" stroke="#6a1b41" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+              <circle cx="38" cy="48" r="1.5" fill="#6a1b41"/>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Logotipo ID Perú Oficial (7 Puntos Biométricos) -->
+        <div class="flex items-center space-x-2.5 pr-3 border-r border-slate-300">
+          <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="28" cy="44" r="5" fill="#16a34a"/>
+            <circle cx="44" cy="33" r="5.5" fill="#16a34a"/>
+            <circle cx="68" cy="32" r="7" fill="#16a34a"/>
+            <circle cx="53" cy="42" r="6" fill="#16a34a"/>
+            <circle cx="44" cy="52" r="5" fill="#16a34a"/>
+            <circle cx="80" cy="50" r="9" fill="#16a34a"/>
+            <circle cx="68" cy="59" r="7.5" fill="#16a34a"/>
+          </svg>
+          <div class="flex flex-col leading-tight">
+            <span class="text-base font-extrabold tracking-tight text-slate-900 flex items-center">
+              idperú
+            </span>
+            <span class="text-[9px] text-emerald-600 font-semibold tracking-wide uppercase">RENIEC • Autenticación</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xs sm:text-sm font-bold tracking-tight text-slate-900">
+              OIDC CIBA Arquitectura
+            </h1>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold uppercase">
+              Modo PING (QR + Webhook)
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500">Autenticación Desacoplada con DNIe y Biometría Facial</p>
+        </div>
+      </div>
+
+      <!-- Controles de Cámara -->
+      <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-1 bg-slate-100 rounded-xl p-1 text-xs border border-slate-300">
+          <span class="text-[10px] text-slate-500 px-1.5 uppercase font-semibold">Cámara:</span>
+          <button onclick="setCameraView('overview')" class="px-2 py-0.5 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-medium">Global</button>
+          <button onclick="setCameraView('web')" class="px-2 py-0.5 rounded-lg text-sky-700 hover:bg-sky-100 transition font-medium">Web</button>
+          <button onclick="setCameraView('srv')" class="px-2 py-0.5 rounded-lg text-indigo-700 hover:bg-indigo-100 transition font-medium">Servidor</button>
+          <button onclick="setCameraView('idp')" class="px-2 py-0.5 rounded-lg text-emerald-700 hover:bg-emerald-100 transition font-medium">IDPerú</button>
+          <button onclick="setCameraView('app')" class="px-2 py-0.5 rounded-lg text-amber-700 hover:bg-amber-100 transition font-medium">App</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 flex justify-between items-start my-2 pointer-events-none gap-4 overflow-hidden">
+      
+      <!-- Panel Izquierdo: Descripción del Paso Actual -->
+      <div class="w-72 sm:w-80 glass-panel rounded-2xl p-3.5 pointer-events-auto space-y-2.5 shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div class="flex items-center space-x-2">
+            <span id="step-badge" class="w-6 h-6 rounded-full bg-cyan-100 text-cyan-800 border border-cyan-400 flex items-center justify-center text-xs font-bold font-mono">1</span>
+            <span class="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Flujo CIBA</span>
+          </div>
+          <span id="step-endpoints" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300 truncate max-w-[140px]">Web &rarr; Backend</span>
+        </div>
+
+        <div>
+          <h2 id="step-title" class="text-xs sm:text-sm font-bold text-slate-900 leading-tight mb-1">(1) Iniciar sesión</h2>
+          <p id="step-desc" class="text-[11px] text-slate-600 leading-relaxed">
+            El ciudadano solicita identificarse en el portal institucional. El cliente web dispara la solicitud hacia su backend para comenzar el ciclo CIBA.
+          </p>
+        </div>
+
+        <!-- Indicador de Comunicación -->
+        <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-slate-500 font-medium">Canal:</span>
+            <span id="step-channel" class="font-mono text-cyan-700 font-bold text-[10px] truncate max-w-[170px]">HTTP POST /auth/login-ciba</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px]">
+            <span class="text-slate-500 font-medium">Transmisión:</span>
+            <div class="flex items-center space-x-1.5">
+              <span id="trans-status-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span id="trans-status-text" class="text-emerald-700 font-mono text-[10px] font-semibold">Envío único</span>
+            </div>
+          </div>
+          <button id="btn-replay-packet" onclick="triggerPacketAnimation()" class="w-full mt-1 py-1 px-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-[10px] font-mono text-slate-800 transition flex items-center justify-center space-x-1.5 border border-slate-300 font-semibold">
+            <svg class="w-3 h-3 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Reenviar animación</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel Derecho: Inspector Técnico Plegable -->
+      <div id="inspector-panel" class="glass-panel rounded-2xl pointer-events-auto flex flex-col shadow-xl overflow-hidden max-w-sm w-80">
+        <div class="flex items-center justify-between px-3.5 py-2 border-b border-slate-200 bg-slate-100 cursor-pointer" onclick="toggleInspector()">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-xs font-bold text-slate-800">Inspector de Protocolo</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span id="payload-type" class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-800 border border-cyan-300 font-semibold">JSON</span>
+            <button id="btn-toggle-inspector" class="text-slate-500 hover:text-slate-900 p-0.5 transition" title="Minimizar / Expandir">
+              <svg id="inspector-collapse-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="inspector-content" class="p-3 bg-slate-950 max-h-56 overflow-y-auto custom-scrollbar font-mono text-[10px] leading-relaxed text-slate-200">
+          <pre id="payload-code" class="whitespace-pre-wrap break-all text-emerald-300"></pre>
+        </div>
+      </div>
+    </main>
+
+    <footer class="glass-panel rounded-2xl p-3 pointer-events-auto space-y-2 shadow-lg">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center space-x-2">
+          <button id="btn-prev" onclick="prevStep()" class="p-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition disabled:opacity-30 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          
+          <button id="btn-play" onclick="togglePlay()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition shadow-md shadow-cyan-600/30">
+            <svg id="play-icon" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <span id="play-text">Auto</span>
+          </button>
+
+          <button id="btn-next" onclick="nextStep()" class="p-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 transition disabled:opacity-30 disabled:cursor-not-allowed">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <span class="text-xs text-slate-600 font-mono pl-2 hidden sm:inline">
+            Paso <strong id="current-step-num" class="text-cyan-700">1</strong> / 12
+          </span>
+        </div>
+
+        <!-- Leyenda de Nodos del Diagrama -->
+        <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-600 font-medium">
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+            <span>Cliente Web</span>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+            <span>Servidor Backend</span>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#16a34a]"></span>
+            <span>Servidor IDPerú (RENIEC)</span>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <span>App IDPerú / DNIe</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini Chips de Navegación Rápida -->
+      <div class="grid grid-cols-6 sm:grid-cols-12 gap-1 pt-1.5 border-t border-slate-200">
+        <button onclick="goToStep(0)" id="chip-0" class="step-chip py-1 px-1 rounded bg-cyan-600 text-white font-mono text-[10px] font-bold transition text-center shadow-sm">1</button>
+        <button onclick="goToStep(1)" id="chip-1" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">2</button>
+        <button onclick="goToStep(2)" id="chip-2" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">3</button>
+        <button onclick="goToStep(3)" id="chip-3" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">4</button>
+        <button onclick="goToStep(4)" id="chip-4" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">5</button>
+        <button onclick="goToStep(5)" id="chip-5" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">6</button>
+        <button onclick="goToStep(6)" id="chip-6" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">7</button>
+        <button onclick="goToStep(7)" id="chip-7" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">8</button>
+        <button onclick="goToStep(8)" id="chip-8" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">9</button>
+        <button onclick="goToStep(9)" id="chip-9" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">10</button>
+        <button onclick="goToStep(10)" id="chip-10" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">11</button>
+        <button onclick="goToStep(11)" id="chip-11" class="step-chip py-1 px-1 rounded bg-slate-200 text-slate-600 font-mono text-[10px] transition text-center hover:bg-slate-300">12</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    let isInspectorCollapsed = false;
+    function toggleInspector() {
+      isInspectorCollapsed = !isInspectorCollapsed;
+      const content = document.getElementById('inspector-content');
+      const icon = document.getElementById('inspector-collapse-icon');
+      if (isInspectorCollapsed) {
+        content.classList.add('hidden');
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>';
+      } else {
+        content.classList.remove('hidden');
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>';
+      }
+    }
+
+    // Datos Oficiales: Usuario César Rosales - DNI 87654321
+    const STEPS_DATA = [
+      {
+        num: 1,
+        title: "(1) Iniciar sesión",
+        from: "web",
+        to: "srv",
+        endpoints: "Cliente Web → Servidor Backend",
+        channel: "HTTP POST /auth/login-ciba",
+        color: 0x0284c7,
+        desc: "El usuario solicita identificarse en el portal institucional. El cliente web dispara la solicitud hacia su backend para comenzar el ciclo CIBA.",
+        payload: {
+          action: "INITIATE_CIBA_SESSION",
+          client_type: "web_spa",
+          requested_scope: "openid profile dnie reniec_biometry",
+          timestamp: new Date().toISOString()
+        }
+      },
+      {
+        num: 2,
+        title: "(2) POST /bc-authorize",
+        from: "srv",
+        to: "idp",
+        endpoints: "Servidor Backend → Servidor IDPerú",
+        channel: "Backchannel HTTPS POST /bc-authorize",
+        color: 0x6366f1,
+        desc: "El Servidor Cliente se autentica ante IDPerú con 'private_key_jwt'. Envía 'client_notification_token' para configurar el webhook del Modo PING.",
+        payload: {
+          client_id: "GOB_ENTIDAD_10023",
+          client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+          client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+          response_mode: "ping",
+          client_notification_token: "cnt_9f81a7b6c5d4e3f2",
+          scope: "openid profile dnie",
+          binding_message: "Acceso al Sistema Nacional de Trámites",
+          requested_expiry: 180
+        }
+      },
+      {
+        num: 3,
+        title: "(3) Payload QR",
+        from: "idp",
+        to: "srv",
+        endpoints: "Servidor IDPerú → Servidor Backend",
+        channel: "HTTPS 200 OK Response",
+        color: 0x16a34a,
+        desc: "IDPerú genera la transacción desacoplada y devuelve el 'auth_req_id' y la cadena de vinculación que será codificada en el código QR.",
+        payload: {
+          auth_req_id: "ciba-req-88902-reniec-44910",
+          expires_in: 180,
+          interval: 5,
+          qr_payload: "idperu://auth?req=ciba-req-88902-reniec-44910&sig=c18fa3b07",
+          status: "authorization_pending"
+        }
+      },
+      {
+        num: 4,
+        title: "(4) Muestra QR",
+        from: "srv",
+        to: "web",
+        endpoints: "Servidor Backend → Cliente Web",
+        channel: "SSE (Server-Sent Events) / WebSocket",
+        color: 0x0284c7,
+        desc: "El backend envía el código QR a la pantalla web para su visualización y abre un canal de escucha en tiempo real (SSE o WebSocket).",
+        payload: {
+          event: "QR_READY",
+          qr_code: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0...",
+          auth_req_id: "ciba-req-88902-reniec-44910",
+          expires_at: 180
+        }
+      },
+      {
+        num: 5,
+        title: "(5) Escanea QR",
+        from: "app",
+        to: "web",
+        endpoints: "App IDPerú / DNIe → Cliente Web",
+        channel: "Escaneo Óptico Láser (Cámara)",
+        color: 0xd97706,
+        desc: "César Rosales abre la app IDPerú en su smartphone, escanea el código QR proyectado en la pantalla y desencripta la solicitud de login.",
+        payload: {
+          app_action: "OPTICAL_QR_SCAN",
+          parsed_auth_req_id: "ciba-req-88902-reniec-44910",
+          scanner: "IDPerú Cam Engine v2.4",
+          device_integrity: "Google Play Protect & iOS Secure Enclave PASSED"
+        }
+      },
+      {
+        num: 6,
+        title: "(6) Biometría / PIN",
+        from: "app",
+        to: "idp",
+        endpoints: "App IDPerú / DNIe → Servidor IDPerú",
+        channel: "TLS mTLS / Biometric Validation API",
+        color: 0xd97706,
+        desc: "La app valida la identidad de César Rosales mediante biometría facial en vivo (liveness) o lectura NFC del DNI electrónico (DNIe) y PIN contra RENIEC.",
+        payload: {
+          auth_req_id: "ciba-req-88902-reniec-44910",
+          auth_method: "FACIAL_BIOMETRY_PLUS_DNIE_NFC",
+          biometric_match_score: "99.8%",
+          liveness_confirmed: true,
+          dni_hash: "sha256(87654321)",
+          citizen_verified: "CESAR ROSALES",
+          user_consent: "APPROVED"
+        }
+      },
+      {
+        num: 7,
+        title: "(7) POST /ciba-notify",
+        from: "idp",
+        to: "srv",
+        endpoints: "Servidor IDPerú → Servidor Backend",
+        channel: "Backchannel Webhook POST /ciba-notify",
+        color: 0x16a34a,
+        desc: "IDPerú notifica al endpoint Webhook del Servidor Cliente que la autorización fue completada exitosamente por el usuario (Modo PING).",
+        payload: {
+          method: "POST",
+          uri: "https://gob-entidad.gob.pe/api/ciba-notify",
+          headers: {
+            "Authorization": "Bearer cnt_9f81a7b6c5d4e3f2",
+            "Content-Type": "application/json"
+          },
+          body: {
+            auth_req_id: "ciba-req-88902-reniec-44910",
+            status: "ready"
+          }
+        }
+      },
+      {
+        num: 8,
+        title: "(8) HTTP 204 No Content",
+        from: "srv",
+        to: "idp",
+        endpoints: "Servidor Backend → Servidor IDPerú",
+        channel: "HTTPS 204 No Content Response",
+        color: 0x6366f1,
+        desc: "El Servidor Cliente acusa recibo del webhook respondiendo con HTTP 204 para confirmar a IDPerú que la notificación fue procesada.",
+        payload: {
+          status: 204,
+          status_text: "No Content",
+          note: "Webhook recibido y validado con client_notification_token"
+        }
+      },
+      {
+        num: 9,
+        title: "(9) POST /token",
+        from: "srv",
+        to: "idp",
+        endpoints: "Servidor Backend → Servidor IDPerú",
+        channel: "HTTPS POST /token (CIBA Grant)",
+        color: 0x6366f1,
+        desc: "Tras la confirmación del ping, el Servidor Cliente canjea de inmediato el 'auth_req_id' en el Token Endpoint con autenticación de clave privada.",
+        payload: {
+          grant_type: "urn:openid:params:grant-type:ciba",
+          auth_req_id: "ciba-req-88902-reniec-44910",
+          client_id: "GOB_ENTIDAD_10023",
+          client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+          client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+      },
+      {
+        num: 10,
+        title: "(10) Tokens HTTP 200",
+        from: "idp",
+        to: "srv",
+        endpoints: "Servidor IDPerú → Servidor Backend",
+        channel: "HTTPS 200 OK Response",
+        color: 0x16a34a,
+        desc: "IDPerú emite el Access Token y el ID Token firmado (con claims de RENIEC: nombres, apellidos, DNI 87654321 de César Rosales).",
+        payload: {
+          access_token: "idperu_at_7c19a928e018274b...",
+          token_type: "Bearer",
+          expires_in: 3600,
+          id_token: "eyJhbGciOiJSUzI1NiIsImtpZCI6InJlbmllYy0wMSJ9...",
+          claims: {
+            sub: "DNI_87654321",
+            given_name: "CESAR",
+            family_name: "ROSALES",
+            dni: "87654321",
+            acr: "urn:pe:gob:idperu:loa:high",
+            iss: "https://idperu.reniec.gob.pe"
+          }
+        }
+      },
+      {
+        num: 11,
+        title: "(11) Evento SSE / WS",
+        from: "srv",
+        to: "web",
+        endpoints: "Servidor Backend → Cliente Web",
+        channel: "SSE Event: AUTH_SUCCESS",
+        color: 0x0284c7,
+        desc: "El backend institucional avisa en milisegundos al navegador mediante el socket abierto que César Rosales ha completado la autenticación.",
+        payload: {
+          event: "SESSION_ESTABLISHED",
+          status: "AUTHENTICATED",
+          user: {
+            nombre_completo: "CESAR ROSALES",
+            dni: "87654321"
+          },
+          session_cookie: "SET_HTTP_ONLY"
+        }
+      },
+      {
+        num: 12,
+        title: "(12) Muestra datos usuario",
+        from: "web",
+        to: "web",
+        endpoints: "Cliente Web (Local)",
+        channel: "Render UI / Dashboard Ciudadano",
+        color: 0x16a34a,
+        desc: "El navegador retira el código QR y despliega el portal oficial con la sesión autenticada de César Rosales (DNI 87654321).",
+        payload: {
+          ui_view: "CITIZEN_PORTAL_DASHBOARD",
+          welcome_message: "Bienvenido, César Rosales",
+          documento_identidad: "DNI 87654321",
+          metodo_verificado: "Biometría Facial RENIEC + DNIe",
+          estado_sesion: "ACTIVA Y CIFRADA"
+        }
+      }
+    ];
+
+    const RECT_COORDS = {
+      srv: new THREE.Vector3(-8.5, 0, -5.5),  // Esquina Superior Izquierda: Servidor Backend
+      idp: new THREE.Vector3(8.5, 0, -5.5),   // Esquina Superior Derecha: Servidor IDPerú
+      web: new THREE.Vector3(-8.5, 0, 5.5),   // Esquina Inferior Izquierda: Cliente Web
+      app: new THREE.Vector3(8.5, 0, 5.5)     // Esquina Inferior Derecha: App IDPerú
+    };
+
+    const CAMERA_PRESETS = {
+      overview: { pos: new THREE.Vector3(0, 24, 27), target: new THREE.Vector3(0, 2, 0) },
+      web:      { pos: new THREE.Vector3(-8.5, 6, 13), target: new THREE.Vector3(-8.5, 2.5, 5.5) },
+      srv:      { pos: new THREE.Vector3(-8.5, 6, 2),  target: new THREE.Vector3(-8.5, 2.5, -5.5) },
+      idp:      { pos: new THREE.Vector3(8.5, 7, 2),   target: new THREE.Vector3(8.5, 3, -5.5) },
+      app:      { pos: new THREE.Vector3(8.5, 6, 13),  target: new THREE.Vector3(8.5, 2.5, 5.5) }
+    };
+
+    let scene, camera, renderer, controls;
+    let currentStep = 0;
+    let isPlaying = false;
+    let playInterval = null;
+
+    const nodes = { web: null, srv: null, idp: null, app: null };
+    let activeLaser = null;
+    let laserGroup = null;
+    let packetMesh = null;
+    let packetAnimationProgress = 1.0;
+    let packetCurve = null;
+    let targetNodeFlash = null;
+    const conduits = [];
+
+    function createClientWebNode(pos) {
+      const group = new THREE.Group();
+      group.position.copy(pos);
+
+      // Base del monitor
+      const baseGeo = new THREE.BoxGeometry(2.2, 0.15, 1.8);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6, roughness: 0.3 });
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      base.position.y = 0.08;
+      group.add(base);
+
+      const poleGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.6, 16);
+      const pole = new THREE.Mesh(poleGeo, baseMat);
+      pole.position.set(0, 0.9, -0.2);
+      group.add(pole);
+
+      // Pantalla Monitor
+      const screenCaseGeo = new THREE.BoxGeometry(4.6, 3.2, 0.25);
+      const screenCaseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.7, roughness: 0.3 });
+      const screenCase = new THREE.Mesh(screenCaseGeo, screenCaseMat);
+      screenCase.position.set(0, 2.5, 0);
+      group.add(screenCase);
+
+      // Display Canvas con UI interactiva
+      const screenCanvas = document.createElement('canvas');
+      screenCanvas.width = 512;
+      screenCanvas.height = 360;
+      const ctx = screenCanvas.getContext('2d');
+      renderScreenCanvas(ctx, 1);
+
+      const texture = new THREE.CanvasTexture(screenCanvas);
+      const displayGeo = new THREE.PlaneGeometry(4.3, 2.9);
+      const displayMat = new THREE.MeshBasicMaterial({ map: texture });
+      const display = new THREE.Mesh(displayGeo, displayMat);
+      display.position.set(0, 2.5, 0.13);
+      group.add(display);
+
+      group.userData = { screenCanvas, ctx, texture, display };
+      scene.add(group);
+      return group;
+    }
+
+    function renderScreenCanvas(ctx, stepNum) {
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, 512, 360);
+
+      // Header de la pantalla
+      ctx.fillStyle = '#1e3a68';
+      ctx.fillRect(0, 0, 512, 45);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Inter, sans-serif';
+      ctx.fillText('PORTAL NACIONAL DE TRÁMITES DIGITALES', 20, 28);
+
+      if (stepNum < 4) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '13px Inter, sans-serif';
+        ctx.fillText('Autenticación Ciudadana Requerida', 20, 85);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(106, 120, 300, 110);
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(106, 120, 300, 110);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 15px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('INGRESAR CON IDPERÚ', 256, 180);
+        ctx.textAlign = 'left';
+      } else if (stepNum >= 4 && stepNum <= 11) {
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Escanee el código con la App IDPerú', 256, 75);
+
+        // QR Background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(186, 95, 140, 140);
+        ctx.strokeStyle = '#16a34a';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(186, 95, 140, 140);
+
+        // QR Code dibujo estilizado
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(196, 105, 34, 34);
+        ctx.fillRect(282, 105, 34, 34);
+        ctx.fillRect(196, 191, 34, 34);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(202, 111, 22, 22);
+        ctx.fillRect(288, 111, 22, 22);
+        ctx.fillRect(202, 197, 22, 22);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(208, 117, 10, 10);
+        ctx.fillRect(294, 117, 10, 10);
+        ctx.fillRect(208, 203, 10, 10);
+
+        ctx.fillRect(240, 115, 16, 16);
+        ctx.fillRect(260, 135, 12, 24);
+        ctx.fillRect(235, 160, 24, 12);
+        ctx.fillRect(270, 180, 20, 20);
+        ctx.fillRect(240, 200, 20, 20);
+
+        // Línea láser escaneadora roja animada de arriba a abajo si es el Paso 5
+        if (stepNum === 5) {
+          const scanFactor = (Math.sin(performance.now() * 0.005) * 0.5 + 0.5);
+          const scanY = 98 + scanFactor * 134;
+
+          // Resplandor difuso del láser
+          const grad = ctx.createLinearGradient(0, scanY - 8, 0, scanY + 8);
+          grad.addColorStop(0, 'rgba(239, 68, 68, 0)');
+          grad.addColorStop(0.5, 'rgba(239, 68, 68, 0.45)');
+          grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(188, scanY - 8, 136, 16);
+
+          // Línea central gruesa y brillante
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(186, scanY - 2, 140, 5);
+
+          // Núcleo blanco brillante del rayo láser
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(190, scanY, 132, 1.5);
+        }
+
+        ctx.fillStyle = '#16a34a';
+        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('● CIBA Modo PING Activo', 256, 260);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.fillText('auth_req_id: ciba-req-88902...', 256, 280);
+        ctx.textAlign = 'left';
+      } else {
+        // Pantalla de sesión iniciada con César Rosales DNI 87654321
+        ctx.fillStyle = '#16a34a';
+        ctx.font = 'bold 16px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('✓ AUTENTICACIÓN EXITOSA', 256, 90);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(66, 115, 380, 170);
+        ctx.strokeStyle = '#16a34a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(66, 115, 380, 170);
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 16px Inter, sans-serif';
+        ctx.fillText('CESAR ROSALES', 256, 155);
+
+        ctx.fillStyle = '#0284c7';
+        ctx.font = 'bold 13px JetBrains Mono, monospace';
+        ctx.fillText('DNI: 87654321 • RENIEC Verificado', 256, 185);
+
+        ctx.fillStyle = '#475569';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.fillText('Nivel de Aseguramiento: Alto (eIDAS High)', 256, 215);
+
+        ctx.fillStyle = '#16a34a';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillText('Sesión OIDC CIBA Activa y Segura', 256, 245);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function createBackendServerNode(pos) {
+      const group = new THREE.Group();
+      group.position.copy(pos);
+
+      const bodyGeo = new THREE.BoxGeometry(2.4, 4.4, 2.0);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 2.2;
+      group.add(body);
+
+      for (let i = 0; i < 6; i++) {
+        const slotGeo = new THREE.BoxGeometry(2.1, 0.45, 0.1);
+        const slotMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+        const slot = new THREE.Mesh(slotGeo, slotMat);
+        slot.position.set(0, 0.8 + i * 0.6, 1.01);
+        group.add(slot);
+
+        const ledGeo = new THREE.SphereGeometry(0.05, 8, 8);
+        const ledMat = new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x6366f1 : 0x0284c7 });
+        const led = new THREE.Mesh(ledGeo, ledMat);
+        led.position.set(0.8, 0.8 + i * 0.6, 1.07);
+        group.add(led);
+      }
+
+      const antGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.8);
+      const antMat = new THREE.MeshBasicMaterial({ color: 0x6366f1 });
+      const ant1 = new THREE.Mesh(antGeo, antMat);
+      ant1.position.set(-0.7, 4.7, 0);
+      const ant2 = new THREE.Mesh(antGeo, antMat);
+      ant2.position.set(0.7, 4.7, 0);
+      group.add(ant1);
+      group.add(ant2);
+
+      scene.add(group);
+      return group;
+    }
+
+    function createIdPeruServerRackNode(pos) {
+      const group = new THREE.Group();
+      group.position.copy(pos);
+
+      // Gabinete Principal de Servidor Datacenter
+      const rackFrameGeo = new THREE.BoxGeometry(2.8, 5.2, 2.4);
+      const rackFrameMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        metalness: 0.85,
+        roughness: 0.25
+      });
+      const rackFrame = new THREE.Mesh(rackFrameGeo, rackFrameMat);
+      rackFrame.position.y = 2.6;
+      group.add(rackFrame);
+
+      const postGeo = new THREE.BoxGeometry(0.18, 5.2, 0.18);
+      const postMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9, roughness: 0.1 });
+      [-1.35, 1.35].forEach(x => {
+        [-1.15, 1.15].forEach(z => {
+          const post = new THREE.Mesh(postGeo, postMat);
+          post.position.set(x, 2.6, z);
+          group.add(post);
+        });
+      });
+
+      // 8 Bandejas Blade con LEDs
+      const ledsArray = [];
+      for (let i = 0; i < 8; i++) {
+        const bladeGeo = new THREE.BoxGeometry(2.45, 0.45, 0.15);
+        const bladeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.7, roughness: 0.3 });
+        const blade = new THREE.Mesh(bladeGeo, bladeMat);
+        blade.position.set(0, 0.7 + i * 0.54, 1.21);
+        group.add(blade);
+
+        const ventGeo = new THREE.BoxGeometry(1.2, 0.12, 0.05);
+        const ventMat = new THREE.MeshBasicMaterial({ color: 0x334155 });
+        const vent = new THREE.Mesh(ventGeo, ventMat);
+        vent.position.set(-0.4, 0.7 + i * 0.54, 1.29);
+        group.add(vent);
+
+        for (let l = 0; l < 4; l++) {
+          const ledGeo = new THREE.SphereGeometry(0.04, 8, 8);
+          const ledMat = new THREE.MeshBasicMaterial({
+            color: l === 0 ? 0x16a34a : (l === 1 ? 0x22c55e : (l === 2 ? 0x0284c7 : 0xd97706))
+          });
+          const led = new THREE.Mesh(ledGeo, ledMat);
+          led.position.set(0.5 + l * 0.16, 0.7 + i * 0.54, 1.29);
+          group.add(led);
+          ledsArray.push(led);
+        }
+      }
+      group.userData.leds = ledsArray;
+
+      // Pantalla central frontal: Logotipo IDPerú de 7 puntos
+      const badgeGeo = new THREE.PlaneGeometry(1.6, 1.1);
+      const badgeCanvas = document.createElement('canvas');
+      badgeCanvas.width = 320;
+      badgeCanvas.height = 220;
+      const bCtx = badgeCanvas.getContext('2d');
+
+      bCtx.fillStyle = '#0f172a';
+      bCtx.fillRect(0, 0, 320, 220);
+      bCtx.strokeStyle = '#16a34a';
+      bCtx.lineWidth = 4;
+      bCtx.strokeRect(4, 4, 312, 212);
+
+      const points = [
+        { x: 90,  y: 95,  r: 10 },
+        { x: 140, y: 70,  r: 12 },
+        { x: 215, y: 70,  r: 15 },
+        { x: 170, y: 92,  r: 13 },
+        { x: 140, y: 115, r: 11 },
+        { x: 250, y: 110, r: 19 },
+        { x: 215, y: 130, r: 16 }
+      ];
+      bCtx.fillStyle = '#16a34a';
+      points.forEach(p => {
+        bCtx.beginPath();
+        bCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        bCtx.fill();
+      });
+
+      bCtx.font = 'bold 26px Inter, sans-serif';
+      bCtx.fillStyle = '#ffffff';
+      bCtx.fillText('idperú', 65, 185);
+      bCtx.font = 'bold 15px JetBrains Mono, monospace';
+      bCtx.fillStyle = '#16a34a';
+      bCtx.fillText('OP/AS CIBA', 170, 185);
+
+      const badgeTexture = new THREE.CanvasTexture(badgeCanvas);
+      const badgeMat = new THREE.MeshBasicMaterial({ map: badgeTexture });
+      const badgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
+      badgeMesh.position.set(0, 2.6, 1.25);
+      group.add(badgeMesh);
+
+      // Placa superior institucional de RENIEC
+      const reniecPlateGeo = new THREE.BoxGeometry(2.4, 0.45, 0.12);
+      const reniecPlateCanvas = document.createElement('canvas');
+      reniecPlateCanvas.width = 400;
+      reniecPlateCanvas.height = 80;
+      const rCtx = reniecPlateCanvas.getContext('2d');
+      rCtx.fillStyle = '#6a1b41';
+      rCtx.fillRect(0, 0, 400, 56);
+      rCtx.fillStyle = '#1e3a68';
+      rCtx.fillRect(0, 56, 400, 24);
+      rCtx.fillStyle = '#ffffff';
+      rCtx.font = 'bold 36px Inter, sans-serif';
+      rCtx.fontStyle = 'italic';
+      rCtx.fillText('RENIEC', 25, 42);
+      rCtx.font = 'bold 11px Inter, sans-serif';
+      rCtx.fillText('REGISTRO NACIONAL DE IDENTIFICACIÓN', 170, 36);
+      rCtx.font = 'bold 10px Inter, sans-serif';
+      rCtx.fillText('Y ESTADO CIVIL - PERÚ', 170, 50);
+
+      const rPlateTexture = new THREE.CanvasTexture(reniecPlateCanvas);
+      const rPlateMat = new THREE.MeshBasicMaterial({ map: rPlateTexture });
+      const rPlateMesh = new THREE.Mesh(reniecPlateGeo, rPlateMat);
+      rPlateMesh.position.set(0, 4.85, 1.21);
+      group.add(rPlateMesh);
+
+      // Anillo holográfico de seguridad superior
+      const ringGeo = new THREE.TorusGeometry(1.6, 0.05, 16, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x16a34a, transparent: true, opacity: 0.8 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 5.4;
+      group.add(ring);
+      group.userData.ring = ring;
+
+      scene.add(group);
+      return group;
+    }
+
+    function createAppNode(pos) {
+      const group = new THREE.Group();
+      group.position.copy(pos);
+
+      const phoneGeo = new THREE.BoxGeometry(2.0, 3.8, 0.22);
+      const phoneMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.2 });
+      const phone = new THREE.Mesh(phoneGeo, phoneMat);
+      phone.position.y = 2.2;
+      group.add(phone);
+
+      const frameGeo = new THREE.BoxGeometry(2.06, 3.86, 0.2);
+      const frameMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.3 });
+      const frame = new THREE.Mesh(frameGeo, frameMat);
+      frame.position.y = 2.2;
+      group.add(frame);
+
+      const appCanvas = document.createElement('canvas');
+      appCanvas.width = 280;
+      appCanvas.height = 480;
+      const ctx = appCanvas.getContext('2d');
+      renderAppCanvas(ctx, 1);
+
+      const texture = new THREE.CanvasTexture(appCanvas);
+      const displayGeo = new THREE.PlaneGeometry(1.85, 3.55);
+      const displayMat = new THREE.MeshBasicMaterial({ map: texture });
+      const display = new THREE.Mesh(displayGeo, displayMat);
+      display.position.set(0, 2.2, 0.12);
+      group.add(display);
+
+      group.userData = { appCanvas, ctx, texture };
+      scene.add(group);
+      return group;
+    }
+
+    function renderAppCanvas(ctx, stepNum) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 280, 480);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, 0, 280, 45);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 13px Inter, sans-serif';
+      ctx.fillText('App IDPerú Oficial', 18, 28);
+      ctx.fillStyle = '#16a34a';
+      ctx.fillText('● DNIe', 220, 28);
+
+      if (stepNum < 5) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Listo para escanear', 140, 180);
+        ctx.fillText('código de autenticación', 140, 205);
+
+        ctx.strokeStyle = '#16a34a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(70, 240, 140, 140);
+        ctx.fillStyle = '#16a34a';
+        ctx.font = 'bold 12px JetBrains Mono, monospace';
+        ctx.fillText('[ ACTIVAR CÁMARA ]', 140, 315);
+        ctx.textAlign = 'left';
+      } else if (stepNum === 5) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('ESCANEANDO QR CIBA...', 140, 115);
+
+        // Visor de la cámara
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(50, 150, 180, 180);
+
+        // Esquinas reforzadas estilo lector biométrico
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(48, 148, 20, 4);
+        ctx.fillRect(48, 148, 4, 20);
+        ctx.fillRect(212, 148, 20, 4);
+        ctx.fillRect(228, 148, 4, 20);
+        ctx.fillRect(48, 326, 20, 4);
+        ctx.fillRect(48, 310, 4, 20);
+        ctx.fillRect(212, 326, 20, 4);
+        ctx.fillRect(228, 310, 4, 20);
+
+        // Barra láser roja móvil de arriba a abajo (Lector de Código de Barras / QR)
+        const scanProgress = (Math.sin(performance.now() * 0.005) * 0.5 + 0.5);
+        const laserY = 155 + scanProgress * 170;
+
+        // Resplandor de escaneo
+        const laserGlow = ctx.createLinearGradient(0, laserY - 12, 0, laserY + 12);
+        laserGlow.addColorStop(0, 'rgba(239, 68, 68, 0)');
+        laserGlow.addColorStop(0.5, 'rgba(239, 68, 68, 0.5)');
+        laserGlow.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        ctx.fillStyle = laserGlow;
+        ctx.fillRect(52, laserY - 12, 176, 24);
+
+        // Línea roja gruesa principal
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(52, laserY - 3, 176, 6);
+
+        // Línea central de máxima intensidad
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(56, laserY - 0.5, 168, 2);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.fillText('Lector Óptico Láser Activo', 140, 360);
+        ctx.fillStyle = '#f87171';
+        ctx.fillText('Barrido de arriba a abajo...', 140, 385);
+        ctx.textAlign = 'left';
+      } else if (stepNum === 6) {
+        ctx.fillStyle = '#16a34a';
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('BIOMETRÍA FACIAL & PIN', 140, 95);
+
+        ctx.strokeStyle = '#16a34a';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(140, 195, 55, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.fillText('César Rosales', 140, 280);
+        ctx.fillStyle = '#22c55e';
+        ctx.font = 'bold 13px JetBrains Mono, monospace';
+        ctx.fillText('DNI 87654321 MATCH: 99.8%', 140, 315);
+        ctx.textAlign = 'left';
+      } else {
+        ctx.fillStyle = '#16a34a';
+        ctx.font = 'bold 16px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('✓ ACCESO APROBADO', 140, 140);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 13px Inter, sans-serif';
+        ctx.fillText('César Rosales', 140, 195);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.fillText('DNI: 87654321', 140, 220);
+        ctx.fillText('Sesión transferida al portal', 140, 250);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function setupConduits() {
+      const connections = [
+        { from: nodes.web.position, to: nodes.srv.position, color: 0x0284c7 },
+        { from: nodes.srv.position, to: nodes.idp.position, color: 0x6366f1 },
+        { from: nodes.app.position, to: nodes.idp.position, color: 0x16a34a },
+        { from: nodes.app.position, to: nodes.web.position, color: 0xd97706 }
+      ];
+
+      connections.forEach(conn => {
+        const p1 = conn.from.clone().add(new THREE.Vector3(0, 1.8, 0));
+        const p2 = conn.to.clone().add(new THREE.Vector3(0, 1.8, 0));
+        const mid = p1.clone().lerp(p2, 0.5);
+        mid.y += 1.2;
+
+        const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
+        const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.06, 8, false);
+        const tubeMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.7 });
+        const tube = new THREE.Mesh(tubeGeo, tubeMat);
+        scene.add(tube);
+        conduits.push({ curve, from: conn.from, to: conn.to, tube });
+      });
+
+      // Creación del Sobre 3D (Envelope) en lugar de la esfera
+      packetMesh = createEnvelopeMesh();
+      packetMesh.visible = false;
+      scene.add(packetMesh);
+    }
+
+    function createEnvelopeMesh() {
+      const group = new THREE.Group();
+
+      // 1. Cuerpo principal del sobre (tarjeta / cuerpo base)
+      const bodyGeo = new THREE.BoxGeometry(0.85, 0.55, 0.08);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.25,
+        metalness: 0.15,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.25
+      });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      group.add(body);
+
+      // Bordes definidos del sobre
+      const edgesGeo = new THREE.EdgesGeometry(bodyGeo);
+      const edgesMat = new THREE.LineBasicMaterial({ color: 0x64748b, linewidth: 2 });
+      const edges = new THREE.LineSegments(edgesGeo, edgesMat);
+      group.add(edges);
+
+      // 2. Solapa triangular posterior / frontal del sobre
+      const flapShape = new THREE.Shape();
+      flapShape.moveTo(-0.41, 0.27);
+      flapShape.lineTo(0.41, 0.27);
+      flapShape.lineTo(0, -0.06);
+      flapShape.closePath();
+
+      const flapGeo = new THREE.ShapeGeometry(flapShape);
+      const flapMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        roughness: 0.3,
+        side: THREE.DoubleSide
+      });
+      const flap = new THREE.Mesh(flapGeo, flapMat);
+      flap.position.set(0, 0, 0.046);
+      group.add(flap);
+
+      // 3. Sello criptográfico digital (sello central de seguridad)
+      const sealGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.02, 16);
+      const sealMat = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        metalness: 0.6,
+        roughness: 0.2,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.8
+      });
+      const seal = new THREE.Mesh(sealGeo, sealMat);
+      seal.rotation.x = Math.PI / 2;
+      seal.position.set(0, -0.06, 0.055);
+      group.add(seal);
+
+      // 4. Halo / Aura luminosa de transmisión
+      const auraGeo = new THREE.PlaneGeometry(1.2, 0.85);
+      const auraMat = new THREE.MeshBasicMaterial({
+        color: 0x0284c7,
+        transparent: true,
+        opacity: 0.45,
+        side: THREE.DoubleSide
+      });
+      const aura = new THREE.Mesh(auraGeo, auraMat);
+      aura.position.z = -0.02;
+      group.add(aura);
+
+      group.scale.set(1.4, 1.4, 1.4);
+      group.userData = { bodyMat, sealMat, auraMat };
+      return group;
+    }
+
+    function triggerPacketAnimation() {
+      const step = STEPS_DATA[currentStep];
+
+      if (laserGroup) {
+        scene.remove(laserGroup);
+        laserGroup = null;
+      }
+      activeLaser = null;
+
+      if (targetNodeFlash) {
+        targetNodeFlash = null;
+      }
+
+      if (step.num === 5) {
+        packetMesh.visible = false;
+        createLaserScan(nodes.app.position, nodes.web.position);
+        updateTransmissionUI("Escaneo Óptico", true);
+        return;
+      }
+
+      if (step.from === step.to) {
+        packetMesh.visible = false;
+        flashNode(step.to, step.color);
+        updateTransmissionUI("Procesamiento Local", true);
+        return;
+      }
+
+      const fromPos = nodes[step.from].position.clone().add(new THREE.Vector3(0, 2.0, 0));
+      const toPos = nodes[step.to].position.clone().add(new THREE.Vector3(0, 2.0, 0));
+      const mid = fromPos.clone().lerp(toPos, 0.5);
+      mid.y += 2.0;
+
+      packetCurve = new THREE.QuadraticBezierCurve3(fromPos, mid, toPos);
+
+      // Sincronizar colores institucionales en el sobre (sello, aura y emisión)
+      packetMesh.userData.bodyMat.emissive.setHex(step.color);
+      packetMesh.userData.sealMat.color.setHex(step.color);
+      packetMesh.userData.sealMat.emissive.setHex(step.color);
+      packetMesh.userData.auraMat.color.setHex(step.color);
+
+      packetMesh.position.copy(fromPos);
+      packetMesh.visible = true;
+
+      packetAnimationProgress = 0.0;
+      updateTransmissionUI("Enviando paquete...", false);
+    }
+
+    function createLaserScan(fromPos, toPos) {
+      laserGroup = new THREE.Group();
+
+      const start = fromPos.clone().add(new THREE.Vector3(0, 2.4, 0));
+      const endCenter = toPos.clone().add(new THREE.Vector3(0, 2.5, 0.15));
+
+      // 1. Rayo Láser Principal Grueso (Cilindro con resplandor en lugar de línea de 1px)
+      const rayDir = new THREE.Vector3().subVectors(endCenter, start);
+      const rayLen = rayDir.length();
+      const rayMid = new THREE.Vector3().addVectors(start, endCenter).multiplyScalar(0.5);
+
+      const laserCylinderGeo = new THREE.CylinderGeometry(0.08, 0.08, rayLen, 16);
+      const laserCylinderMat = new THREE.MeshBasicMaterial({
+        color: 0xff1133,
+        transparent: true,
+        opacity: 0.95
+      });
+      const laserCylinder = new THREE.Mesh(laserCylinderGeo, laserCylinderMat);
+      laserCylinder.position.copy(rayMid);
+      laserCylinder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), rayDir.clone().normalize());
+      laserGroup.add(laserCylinder);
+
+      // Núcleo blanco brillante interior del rayo
+      const laserCoreGeo = new THREE.CylinderGeometry(0.03, 0.03, rayLen, 12);
+      const laserCoreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const laserCore = new THREE.Mesh(laserCoreGeo, laserCoreMat);
+      laserCore.position.copy(rayMid);
+      laserCore.quaternion.copy(laserCylinder.quaternion);
+      laserGroup.add(laserCore);
+
+      // 2. Cortina / Abanico óptico de escaneo (Plano translúcido triangular)
+      const fanShape = new THREE.Shape();
+      fanShape.moveTo(0, 0);
+      fanShape.lineTo(-1.2, 2.2);
+      fanShape.lineTo(1.2, 2.2);
+      fanShape.closePath();
+
+      const fanGeo = new THREE.ShapeGeometry(fanShape);
+      const fanMat = new THREE.MeshBasicMaterial({
+        color: 0xef4444,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide
+      });
+      const fanMesh = new THREE.Mesh(fanGeo, fanMat);
+      fanMesh.position.copy(start);
+      fanMesh.lookAt(endCenter);
+      fanMesh.rotateX(Math.PI / 2);
+      laserGroup.add(fanMesh);
+
+      // 3. Barra horizontal roja gruesa en la pantalla del monitor que se desplazará arriba/abajo
+      const scanBarGeo = new THREE.BoxGeometry(2.0, 0.12, 0.06);
+      const scanBarMat = new THREE.MeshBasicMaterial({ color: 0xff0022 });
+      const scanBar = new THREE.Mesh(scanBarGeo, scanBarMat);
+      scanBar.position.copy(endCenter);
+      laserGroup.add(scanBar);
+
+      // Halo del punto de impacto sobre la pantalla
+      const impactHaloGeo = new THREE.PlaneGeometry(2.2, 0.35);
+      const impactHaloMat = new THREE.MeshBasicMaterial({
+        color: 0xff2244,
+        transparent: true,
+        opacity: 0.6,
+        side: THREE.DoubleSide
+      });
+      const impactHalo = new THREE.Mesh(impactHaloGeo, impactHaloMat);
+      impactHalo.position.copy(endCenter);
+      impactHalo.position.z += 0.02;
+      laserGroup.add(impactHalo);
+
+      laserGroup.userData = {
+        laserCylinder,
+        laserCore,
+        scanBar,
+        impactHalo,
+        fanMesh,
+        start,
+        endCenter
+      };
+
+      scene.add(laserGroup);
+      activeLaser = laserGroup;
+    }
+
+    function flashNode(nodeKey, color) {
+      targetNodeFlash = {
+        node: nodes[nodeKey],
+        color: color,
+        startTime: performance.now()
+      };
+    }
+
+    function updateTransmissionUI(statusText, isCompleted) {
+      const dot = document.getElementById('trans-status-dot');
+      const text = document.getElementById('trans-status-text');
+
+      if (isCompleted) {
+        dot.className = "w-2 h-2 rounded-full bg-emerald-500";
+        text.innerText = "Entregado (1/1)";
+        text.className = "text-emerald-700 font-mono text-[10px] font-semibold";
+      } else {
+        dot.className = "w-2 h-2 rounded-full bg-cyan-600 animate-ping";
+        text.innerText = statusText;
+        text.className = "text-cyan-700 font-mono text-[10px] font-semibold";
+      }
+    }
+
+    function initThreeScene() {
+      const container = document.getElementById('canvas-container');
+      const w = window.innerWidth || 1200;
+      const h = window.innerHeight || 800;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf1f5f9);
+      scene.fog = new THREE.FogExp2(0xf1f5f9, 0.012);
+
+      camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+      camera.position.copy(CAMERA_PRESETS.overview.pos);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w, h);
+      renderer.shadowMap.enabled = true;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      container.appendChild(renderer.domElement);
+
+      try {
+        if (THREE.OrbitControls) {
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.target.copy(CAMERA_PRESETS.overview.target);
+          controls.enableDamping = true;
+          controls.dampingFactor = 0.05;
+          controls.maxPolarAngle = Math.PI / 2 + 0.05;
+          controls.minDistance = 6;
+          controls.maxDistance = 60;
+        } else {
+          controls = { update: function(){}, target: new THREE.Vector3() };
+        }
+      } catch (err) {
+        controls = { update: function(){}, target: new THREE.Vector3() };
+      }
+
+      // Luces de alta luminosidad para fondo claro
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.1);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      dirLight.position.set(15, 30, 20);
+      scene.add(dirLight);
+
+      const fillLight = new THREE.DirectionalLight(0xe2e8f0, 0.6);
+      fillLight.position.set(-15, 20, -20);
+      scene.add(fillLight);
+
+      // Rejilla de Piso clara
+      const gridHelper = new THREE.GridHelper(50, 50, 0x0284c7, 0xcbd5e1);
+      gridHelper.position.y = 0;
+      scene.add(gridHelper);
+
+      // Construcción de los 4 Nodos en distribución Rectangular
+      nodes.srv = createBackendServerNode(RECT_COORDS.srv);
+      nodes.idp = createIdPeruServerRackNode(RECT_COORDS.idp);
+      nodes.web = createClientWebNode(RECT_COORDS.web);
+      nodes.app = createAppNode(RECT_COORDS.app);
+
+      // Etiquetas nítidas en el piso
+      createFloorLabel("CLIENTE WEB", new THREE.Vector3(-8.5, 0.02, 8.5), "#0284c7");
+      createFloorLabel("SERVIDOR BACKEND", new THREE.Vector3(-8.5, 0.02, -8.5), "#6366f1");
+      createFloorLabel("SERVIDOR IDPERÚ (RENIEC)", new THREE.Vector3(8.5, 0.02, -8.5), "#16a34a");
+      createFloorLabel("APP IDPERÚ / DNIe", new THREE.Vector3(8.5, 0.02, 8.5), "#d97706");
+
+      setupConduits();
+      window.addEventListener('resize', onWindowResize, false);
+    }
+
+    function createFloorLabel(text, pos, colorHex) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.roundRect ? ctx.roundRect(10, 10, 492, 108, 16) : ctx.fillRect(10, 10, 492, 108);
+      ctx.fill();
+      ctx.strokeStyle = colorHex;
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.fillStyle = colorHex;
+      ctx.font = 'bold 28px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const geo = new THREE.PlaneGeometry(5, 1.25);
+      const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.95 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(pos);
+      mesh.rotation.x = -Math.PI / 2;
+      scene.add(mesh);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function updateUI() {
+      const step = STEPS_DATA[currentStep];
+
+      document.getElementById('step-badge').innerText = step.num;
+      document.getElementById('step-endpoints').innerText = step.endpoints;
+      document.getElementById('step-title').innerText = step.title;
+      document.getElementById('step-desc').innerText = step.desc;
+      document.getElementById('step-channel').innerText = step.channel;
+      document.getElementById('current-step-num').innerText = step.num;
+
+      document.getElementById('payload-code').innerText = JSON.stringify(step.payload, null, 2);
+
+      for (let i = 0; i < 12; i++) {
+        const chip = document.getElementById(`chip-${i}`);
+        if (i === currentStep) {
+          chip.className = "step-chip py-1 px-1 rounded bg-cyan-600 text-white font-mono text-[10px] font-bold shadow-md";
+        } else if (i < currentStep) {
+          chip.className = "step-chip py-1 px-1 rounded bg-slate-200 text-emerald-700 font-mono text-[10px] hover:bg-slate-300 font-semibold";
+        } else {
+          chip.className = "step-chip py-1 px-1 rounded bg-slate-100 text-slate-500 font-mono text-[10px] hover:bg-slate-200";
+        }
+      }
+
+      document.getElementById('btn-prev').disabled = (currentStep === 0);
+      document.getElementById('btn-next').disabled = (currentStep === 11);
+
+      renderScreenCanvas(nodes.web.userData.ctx, step.num);
+      nodes.web.userData.texture.needsUpdate = true;
+
+      renderAppCanvas(nodes.app.userData.ctx, step.num);
+      nodes.app.userData.texture.needsUpdate = true;
+
+      triggerPacketAnimation();
+    }
+
+    function nextStep() {
+      if (currentStep < STEPS_DATA.length - 1) {
+        currentStep++;
+        updateUI();
+      } else if (isPlaying) {
+        togglePlay();
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 0) {
+        currentStep--;
+        updateUI();
+      }
+    }
+
+    function goToStep(index) {
+      currentStep = index;
+      updateUI();
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      const playIcon = document.getElementById('play-icon');
+      const playText = document.getElementById('play-text');
+
+      if (isPlaying) {
+        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        playText.innerText = "Pausar";
+        playInterval = setInterval(() => {
+          if (currentStep < STEPS_DATA.length - 1) {
+            nextStep();
+          } else {
+            currentStep = 0;
+            updateUI();
+          }
+        }, 4200);
+      } else {
+        playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        playText.innerText = "Auto";
+        clearInterval(playInterval);
+      }
+    }
+
+    let cameraLerp = null;
+    function setCameraView(viewKey) {
+      const preset = CAMERA_PRESETS[viewKey];
+      if (!preset) return;
+      cameraLerp = {
+        startPos: camera.position.clone(),
+        endPos: preset.pos.clone(),
+        startTarget: controls.target.clone(),
+        endTarget: preset.target.clone(),
+        progress: 0
+      };
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const time = performance.now() * 0.001;
+
+      // Animación continua del rayo láser en Paso 5 (arriba hacia abajo estilo lector de código de barras)
+      if (currentStep === 4 && laserGroup && laserGroup.userData) {
+        const sweepProgress = (Math.sin(time * 5) * 0.5 + 0.5); // 0 a 1 suave
+        const yOffset = (sweepProgress - 0.5) * 1.6; // Oscila verticalmente en la pantalla
+
+        const targetPos = laserGroup.userData.endCenter.clone();
+        targetPos.y += yOffset;
+
+        laserGroup.userData.scanBar.position.y = targetPos.y;
+        laserGroup.userData.impactHalo.position.y = targetPos.y;
+
+        // Reorientar el cilindro del láser hacia la posición móvil de escaneo
+        const newRay = new THREE.Vector3().subVectors(targetPos, laserGroup.userData.start);
+        const newLen = newRay.length();
+        const newMid = new THREE.Vector3().addVectors(laserGroup.userData.start, targetPos).multiplyScalar(0.5);
+
+        laserGroup.userData.laserCylinder.position.copy(newMid);
+        laserGroup.userData.laserCylinder.scale.set(1, newLen / (laserGroup.userData.laserCylinder.geometry.parameters.height || 1), 1);
+        laserGroup.userData.laserCylinder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), newRay.clone().normalize());
+
+        laserGroup.userData.laserCore.position.copy(newMid);
+        laserGroup.userData.laserCore.scale.copy(laserGroup.userData.laserCylinder.scale);
+        laserGroup.userData.laserCore.quaternion.copy(laserGroup.userData.laserCylinder.quaternion);
+
+        // Pulso de intensidad del halo
+        laserGroup.userData.impactHalo.material.opacity = 0.45 + Math.sin(time * 12) * 0.25;
+
+        // Actualizar los lienzos 2D del monitor y celular para que la línea roja se mueva en vivo
+        if (nodes.web && nodes.web.userData) {
+          renderScreenCanvas(nodes.web.userData.ctx, 5);
+          nodes.web.userData.texture.needsUpdate = true;
+        }
+        if (nodes.app && nodes.app.userData) {
+          renderAppCanvas(nodes.app.userData.ctx, 5);
+          nodes.app.userData.texture.needsUpdate = true;
+        }
+      }
+
+      if (nodes.idp && nodes.idp.userData.ring) {
+        nodes.idp.userData.ring.rotation.z += 0.01;
+      }
+
+      if (nodes.idp && nodes.idp.userData.leds) {
+        nodes.idp.userData.leds.forEach((led, idx) => {
+          if (Math.sin(time * 5 + idx) > 0.85) {
+            led.visible = false;
+          } else {
+            led.visible = true;
+          }
+        });
+      }
+
+      if (packetMesh && packetMesh.visible && packetCurve && packetAnimationProgress < 1.0) {
+        packetAnimationProgress += 0.018;
+        if (packetAnimationProgress >= 1.0) {
+          packetAnimationProgress = 1.0;
+          packetMesh.visible = false;
+          const currentDest = STEPS_DATA[currentStep].to;
+          flashNode(currentDest, STEPS_DATA[currentStep].color);
+          updateTransmissionUI("Recibido con éxito", true);
+        } else {
+          const pt = packetCurve.getPoint(packetAnimationProgress);
+          packetMesh.position.copy(pt);
+
+          // Orientación del sobre a lo largo de la trayectoria de vuelo con sutil ondulación
+          const nextPt = packetCurve.getPoint(Math.min(1.0, packetAnimationProgress + 0.03));
+          packetMesh.lookAt(nextPt);
+          packetMesh.rotateZ(Math.sin(time * 10) * 0.15); // Aleteo dinámico en el aire
+        }
+      }
+
+      if (cameraLerp) {
+        cameraLerp.progress += 0.04;
+        if (cameraLerp.progress >= 1.0) {
+          camera.position.copy(cameraLerp.endPos);
+          controls.target.copy(cameraLerp.endTarget);
+          cameraLerp = null;
+        } else {
+          camera.position.lerpVectors(cameraLerp.startPos, cameraLerp.endPos, cameraLerp.progress);
+          controls.target.lerpVectors(cameraLerp.startTarget, cameraLerp.endTarget, cameraLerp.progress);
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Arranque seguro inmediato para entornos de previsualización web
+    let isAppStarted = false;
+    function startApp() {
+      if (isAppStarted) return;
+      isAppStarted = true;
+      initThreeScene();
+      updateUI();
+      animate();
+    }
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      startApp();
+    } else {
+      document.addEventListener('DOMContentLoaded', startApp);
+      window.addEventListener('load', startApp);
+    }
+  </script>
+</body>
+</html>
