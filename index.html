@@ -300,7 +300,7 @@
         endpoints: "Servidor Backend → Servidor IDPerú",
         channel: "Backchannel HTTPS POST /bc-authorize",
         color: 0x6366f1,
-        desc: "El Servidor Cliente se autentica ante IDPerú. Envía 'client_notification_token' para configurar el webhook del Modo PING.",
+        desc: "El Servidor Cliente se autentica ante IDPerú. Envía 'client_notification_token' para el webhook del Modo PING y parámetros PKCE (code_challenge).",
         payload: {
           request: "POST /bc-authorize HTTP/1.1",
           headers: {
@@ -313,6 +313,8 @@
             binding_message: "Acceso al Sistema Nacional de Trámites",
             response_mode: "ping",
             client_notification_token: "cnt_9f81a7b6c5d4e3f2",
+            code_challenge: "E9Melgj25YhKzmGYAv3FCERbU6n7AqMw81n99AGqb83",
+            code_challenge_method: "S256",
             requested_expiry: 180,
             client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
             client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -454,7 +456,7 @@
         endpoints: "Servidor Backend → Servidor IDPerú",
         channel: "HTTPS POST /token (CIBA Grant)",
         color: 0x6366f1,
-        desc: "Tras la confirmación del ping, el Servidor Cliente canjea de inmediato el 'auth_req_id' en el Token Endpoint.",
+        desc: "Tras la confirmación del ping, el Servidor Cliente canjea el 'auth_req_id' en el Token Endpoint enviando 'code_verifier' para validar el reto PKCE.",
         payload: {
           request: "POST /token HTTP/1.1",
           headers: {
@@ -464,6 +466,7 @@
           params: {
             grant_type: "urn:openid:params:grant-type:ciba",
             auth_req_id: "1c266106-2580-40e9-b570-0b60166d3a8e",
+            code_verifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
             client_id: "GOB_ENTIDAD_10023",
             client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
             client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
