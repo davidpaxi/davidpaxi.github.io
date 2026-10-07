@@ -279,10 +279,17 @@
         color: 0x0284c7,
         desc: "El usuario solicita identificarse en el portal institucional. El cliente web dispara la solicitud hacia su backend para comenzar el ciclo CIBA.",
         payload: {
-          action: "INITIATE_CIBA_SESSION",
-          client_type: "web_spa",
-          requested_scope: "openid profile dnie reniec_biometry",
-          timestamp: new Date().toISOString()
+          request: "POST /auth/login-ciba HTTP/1.1",
+          headers: {
+            "Host": "gob-entidad.gob.pe",
+            "Content-Type": "application/json"
+          },
+          body: {
+            login_hint: "87654321",
+            scope: "openid profile dnie reniec_biometry",
+            binding_message: "Acceso al Sistema Nacional de Trámites",
+            client_type: "web_spa"
+          }
         }
       },
       {
@@ -293,16 +300,23 @@
         endpoints: "Servidor Backend → Servidor IDPerú",
         channel: "Backchannel HTTPS POST /bc-authorize",
         color: 0x6366f1,
-        desc: "El Servidor Cliente se autentica ante IDPerú con 'private_key_jwt'. Envía 'client_notification_token' para configurar el webhook del Modo PING.",
+        desc: "El Servidor Cliente se autentica ante IDPerú. Envía 'client_notification_token' para configurar el webhook del Modo PING.",
         payload: {
-          client_id: "GOB_ENTIDAD_10023",
-          client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-          client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-          response_mode: "ping",
-          client_notification_token: "cnt_9f81a7b6c5d4e3f2",
-          scope: "openid profile dnie",
-          binding_message: "Acceso al Sistema Nacional de Trámites",
-          requested_expiry: 180
+          request: "POST /bc-authorize HTTP/1.1",
+          headers: {
+            "Host": "idperu.reniec.gob.pe",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          params: {
+            scope: "openid profile dnie",
+            login_hint: "87654321",
+            binding_message: "Acceso al Sistema Nacional de Trámites",
+            response_mode: "ping",
+            client_notification_token: "cnt_9f81a7b6c5d4e3f2",
+            requested_expiry: 180,
+            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+            client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
         }
       },
       {
@@ -315,11 +329,18 @@
         color: 0x16a34a,
         desc: "IDPerú genera la transacción desacoplada y devuelve el 'auth_req_id' y la cadena de vinculación que será codificada en el código QR.",
         payload: {
-          auth_req_id: "ciba-req-88902-reniec-44910",
-          expires_in: 180,
-          interval: 5,
-          qr_payload: "idperu://auth?req=ciba-req-88902-reniec-44910&sig=c18fa3b07",
-          status: "authorization_pending"
+          response: "HTTP/1.1 200 OK",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            "Cache-Control": "no-store"
+          },
+          body: {
+            auth_req_id: "1c266106-2580-40e9-b570-0b60166d3a8e",
+            expires_in: 180,
+            interval: 5,
+            qr_payload: "idperu://auth?req=1c266106-2580-40e9-b570-0b60166d3a8e&sig=c18fa3b07",
+            status: "authorization_pending"
+          }
         }
       },
       {
@@ -332,10 +353,13 @@
         color: 0x0284c7,
         desc: "El backend envía el código QR a la pantalla web para su visualización y abre un canal de escucha en tiempo real (SSE o WebSocket).",
         payload: {
+          protocol: "Server-Sent Events (SSE)",
           event: "QR_READY",
-          qr_code: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0...",
-          auth_req_id: "ciba-req-88902-reniec-44910",
-          expires_at: 180
+          data: {
+            auth_req_id: "1c266106-2580-40e9-b570-0b60166d3a8e",
+            qr_payload: "idperu://auth?req=1c266106-2580-40e9-b570-0b60166d3a8e&sig=c18fa3b07",
+            expires_in: 180
+          }
         }
       },
       {
@@ -348,9 +372,12 @@
         color: 0xd97706,
         desc: "César Rosales abre la app IDPerú en su smartphone, escanea el código QR proyectado en la pantalla y desencripta la solicitud de login.",
         payload: {
-          app_action: "OPTICAL_QR_SCAN",
-          parsed_auth_req_id: "ciba-req-88902-reniec-44910",
+          action: "OPTICAL_QR_SCAN",
           scanner: "IDPerú Cam Engine v2.4",
+          parsed_data: {
+            auth_req_id: "1c266106-2580-40e9-b570-0b60166d3a8e",
+            signature: "c18fa3b07"
+          },
           device_integrity: "Google Play Protect & iOS Secure Enclave PASSED"
         }
       },
@@ -364,13 +391,20 @@
         color: 0xd97706,
         desc: "La app valida la identidad de César Rosales mediante biometría facial en vivo (liveness) o lectura NFC del DNI electrónico (DNIe) y PIN contra RENIEC.",
         payload: {
-          auth_req_id: "ciba-req-88902-reniec-44910",
-          auth_method: "FACIAL_BIOMETRY_PLUS_DNIE_NFC",
-          biometric_match_score: "99.8%",
-          liveness_confirmed: true,
-          dni_hash: "sha256(87654321)",
-          citizen_verified: "CESAR ROSALES",
-          user_consent: "APPROVED"
+          request: "POST /api/v1/biometric-auth HTTP/1.1",
+          headers: {
+            "Host": "idperu.reniec.gob.pe",
+            "Content-Type": "application/json",
+            "X-Device-Attestation": "mTLS_DNIe_NFC"
+          },
+          body: {
+            auth_req_id: "1c266106-2580-40e9-b570-0b60166d3a8e",
+            dni: "87654321",
+            auth_method: "FACIAL_BIOMETRY_PLUS_DNIE_NFC",
+            biometric_match_score: "99.8%",
+            liveness_confirmed: true,
+            user_consent: "APPROVED"
+          }
         }
       },
       {
@@ -383,15 +417,15 @@
         color: 0x16a34a,
         desc: "IDPerú notifica al endpoint Webhook del Servidor Cliente que la autorización fue completada exitosamente por el usuario (Modo PING).",
         payload: {
-          method: "POST",
-          uri: "https://gob-entidad.gob.pe/api/ciba-notify",
+          request: "POST /ciba-notify HTTP/1.1",
           headers: {
+            "Host": "gob-entidad.gob.pe",
             "Authorization": "Bearer cnt_9f81a7b6c5d4e3f2",
             "Content-Type": "application/json"
           },
           body: {
-            auth_req_id: "ciba-req-88902-reniec-44910",
-            status: "ready"
+            auth_req_id: "1c266106-2580-40e9-b570-0b60166d3a8e",
+            client_notification_token: "cnt_9f81a7b6c5d4e3f2"
           }
         }
       },
@@ -405,8 +439,10 @@
         color: 0x6366f1,
         desc: "El Servidor Cliente acusa recibo del webhook respondiendo con HTTP 204 para confirmar a IDPerú que la notificación fue procesada.",
         payload: {
-          status: 204,
-          status_text: "No Content",
+          response: "HTTP/1.1 204 No Content",
+          headers: {
+            "Date": "Wed, 07 Oct 2026 19:30:00 GMT"
+          },
           note: "Webhook recibido y validado con client_notification_token"
         }
       },
@@ -420,11 +456,18 @@
         color: 0x6366f1,
         desc: "Tras la confirmación del ping, el Servidor Cliente canjea de inmediato el 'auth_req_id' en el Token Endpoint con autenticación de clave privada.",
         payload: {
-          grant_type: "urn:openid:params:grant-type:ciba",
-          auth_req_id: "ciba-req-88902-reniec-44910",
-          client_id: "GOB_ENTIDAD_10023",
-          client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-          client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+          request: "POST /token HTTP/1.1",
+          headers: {
+            "Host": "idperu.reniec.gob.pe",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          params: {
+            grant_type: "urn:openid:params:grant-type:ciba",
+            auth_req_id: "1c266106-2580-40e9-b570-0b60166d3a8e",
+            client_id: "GOB_ENTIDAD_10023",
+            client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+            client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
         }
       },
       {
@@ -437,17 +480,25 @@
         color: 0x16a34a,
         desc: "IDPerú emite el Access Token y el ID Token firmado (con claims de RENIEC: nombres, apellidos, DNI 87654321 de César Rosales).",
         payload: {
-          access_token: "idperu_at_7c19a928e018274b...",
-          token_type: "Bearer",
-          expires_in: 3600,
-          id_token: "eyJhbGciOiJSUzI1NiIsImtpZCI6InJlbmllYy0wMSJ9...",
-          claims: {
-            sub: "DNI_87654321",
-            given_name: "CESAR",
-            family_name: "ROSALES",
-            dni: "87654321",
-            acr: "urn:pe:gob:idperu:loa:high",
-            iss: "https://idperu.reniec.gob.pe"
+          response: "HTTP/1.1 200 OK",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            "Cache-Control": "no-store"
+          },
+          body: {
+            access_token: "idperu_at_7c19a928e018274b...",
+            token_type: "Bearer",
+            expires_in: 3600,
+            id_token: "eyJhbGciOiJSUzI1NiIsImtpZCI6InJlbmllYy0wMSJ9...",
+            id_token_decoded: {
+              iss: "https://idperu.reniec.gob.pe",
+              sub: "DNI_87654321",
+              aud: "GOB_ENTIDAD_10023",
+              given_name: "CESAR",
+              family_name: "ROSALES",
+              dni: "87654321",
+              acr: "urn:pe:gob:idperu:loa:high"
+            }
           }
         }
       },
@@ -461,13 +512,16 @@
         color: 0x0284c7,
         desc: "El backend institucional avisa en milisegundos al navegador mediante el socket abierto que César Rosales ha completado la autenticación.",
         payload: {
+          protocol: "Server-Sent Events (SSE)",
           event: "SESSION_ESTABLISHED",
-          status: "AUTHENTICATED",
-          user: {
-            nombre_completo: "CESAR ROSALES",
-            dni: "87654321"
-          },
-          session_cookie: "SET_HTTP_ONLY"
+          data: {
+            status: "AUTHENTICATED",
+            user: {
+              dni: "87654321",
+              nombre_completo: "CESAR ROSALES"
+            },
+            session_cookie: "SET_HTTP_ONLY"
+          }
         }
       },
       {
@@ -480,11 +534,13 @@
         color: 0x16a34a,
         desc: "El navegador retira el código QR y despliega el portal oficial con la sesión autenticada de César Rosales (DNI 87654321).",
         payload: {
-          ui_view: "CITIZEN_PORTAL_DASHBOARD",
-          welcome_message: "Bienvenido, César Rosales",
-          documento_identidad: "DNI 87654321",
-          metodo_verificado: "Biometría Facial RENIEC + DNIe",
-          estado_sesion: "ACTIVA Y CIFRADA"
+          ui_state: "CITIZEN_PORTAL_DASHBOARD",
+          user_profile: {
+            nombre: "CESAR ROSALES",
+            documento: "DNI 87654321",
+            verificacion: "Biometría Facial RENIEC + DNIe",
+            estado_sesion: "ACTIVA Y CIFRADA"
+          }
         }
       }
     ];
